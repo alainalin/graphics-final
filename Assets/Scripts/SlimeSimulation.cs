@@ -176,11 +176,13 @@ public class SlimeSimulation : MonoBehaviour
 
     void FixedUpdate()
     {
+        // place food if placingFood is true and mouse is clicked
         if (placingFood && Input.GetButton("Fire1"))
         {
             PlaceFood();
         }
 
+        // run the specified number of simulations per frame
         if (playing)
         {
             for (int i = 0; i < settings.simsPerFrame; i++)
@@ -191,6 +193,7 @@ public class SlimeSimulation : MonoBehaviour
             Paint();
         }
 
+        // erase if erasing is true and mouse is clicked
         if (erasing && Input.GetButton("Fire1"))
         {
             Erase();
