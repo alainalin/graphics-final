@@ -39,7 +39,7 @@ public class SlimeSimulation : MonoBehaviour
     public RenderTexture foodMap;
 
     public List<SlimeAgent> agents;
-    public List<Vector2> foodSources;
+    public HashSet<Vector2> foodSources = new();
     public SlimeAgent[] agentArray;
     public Vector2[] foodSourceArray;
     ComputeBuffer agentBuffer;
@@ -136,7 +136,8 @@ public class SlimeSimulation : MonoBehaviour
 
     public void SetFood()
     {
-        foodSourceArray = foodSources.ToArray();
+        foodSourceArray = new Vector2[foodSources.Count];
+        foodSources.CopyTo(foodSourceArray);
 
         // passing food data + other uniforms
         ComputeUtil.CreateBuffer(ref foodBuffer, foodSourceArray);
@@ -227,10 +228,13 @@ public class SlimeSimulation : MonoBehaviour
         {
             Vector2 shiftedCanvasPos = canvasPos + new Vector2(settings.vpWidth / 2, settings.vpHeight / 2);
 
-            foodSources.Add(shiftedCanvasPos);
-            SetFood();
-            computeSim.SetVector("clickPos", shiftedCanvasPos);
-            computeSim.Dispatch(foodKernel, settings.vpWidth / 8, settings.vpHeight / 8, 1);
+            if (!foodSources.Contains(shiftedCanvasPos))
+            {
+                foodSources.Add(shiftedCanvasPos);
+                SetFood();
+                computeSim.SetVector("clickPos", shiftedCanvasPos);
+                computeSim.Dispatch(foodKernel, settings.vpWidth / 8, settings.vpHeight / 8, 1);
+            }
         }
 
         Paint();
