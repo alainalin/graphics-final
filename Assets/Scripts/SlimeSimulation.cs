@@ -16,7 +16,7 @@ public class SlimeSimulation : MonoBehaviour
     public bool playing = false;
     public bool placingFood = false;
     public bool erasing = false;
-    public bool clearAll = false; 
+    public bool clearAll = false;
 
     public TMP_Text togglePlayText;
     public TMP_Text toggleFoodText;
@@ -28,7 +28,7 @@ public class SlimeSimulation : MonoBehaviour
 
     const int updateKernel = 0;
     const int blurKernel = 1;
-	const int paintKernel = 2;
+    const int paintKernel = 2;
     const int foodKernel = 3;
     const int eraseKernel = 4;
     const int clearKernel = 5;
@@ -36,7 +36,7 @@ public class SlimeSimulation : MonoBehaviour
     public RenderTexture viewportTex;
     public RenderTexture trailMap;
     public RenderTexture nextTrailMap;
-    public RenderTexture foodMap; 
+    public RenderTexture foodMap;
 
     public List<SlimeAgent> agents;
     public SlimeAgent[] agentArray;
@@ -60,7 +60,7 @@ public class SlimeSimulation : MonoBehaviour
         // blur function in compute shader
         computeSim.SetTexture(blurKernel, "TrailMap", trailMap);
         computeSim.SetTexture(blurKernel, "NextTrailMap", nextTrailMap);
-    
+
         // paint canvas function in compute shader
         computeSim.SetTexture(paintKernel, "ViewportTex", viewportTex);
         computeSim.SetTexture(paintKernel, "TrailMap", trailMap);
@@ -82,7 +82,7 @@ public class SlimeSimulation : MonoBehaviour
 
         ComputeUtil.CreateBuffer(ref speciesBuffer, settings.species);
         computeSim.SetBuffer(updateKernel, "species", speciesBuffer);
-        computeSim.SetBuffer(paintKernel, "species", speciesBuffer); 
+        computeSim.SetBuffer(paintKernel, "species", speciesBuffer);
 
         computeSim.SetInt("width", settings.vpWidth);
         computeSim.SetInt("height", settings.vpHeight);
@@ -101,7 +101,7 @@ public class SlimeSimulation : MonoBehaviour
 
     public void CreateAgents()
     {
-               // intialize agent positions within circle 
+        // intialize agent positions within circle 
         agents = new List<SlimeAgent>(settings.numAgents);
         for (int i = 0; i < settings.numAgents; i++)
         {
@@ -110,7 +110,8 @@ public class SlimeSimulation : MonoBehaviour
             float randomOffsetX = Mathf.Cos(randomTheta) * randomR;
             float randomOffsetY = Mathf.Sin(randomTheta) * randomR;
             float randAngle = Mathf.PI + Mathf.Atan2(randomOffsetY, randomOffsetX);
-            agents.Add( new SlimeAgent {
+            agents.Add(new SlimeAgent
+            {
                 position = new Vector2(settings.vpWidth / 2 + randomOffsetX, settings.vpHeight / 2 + randomOffsetY),
                 angle = randAngle,
                 speciesID = 0
@@ -143,7 +144,7 @@ public class SlimeSimulation : MonoBehaviour
             togglePlayText.SetText("Play");
         }
     }
-    
+
     public void ToggleFood()
     {
         // force Unity to recompile
@@ -159,24 +160,18 @@ public class SlimeSimulation : MonoBehaviour
         }
     }
 
-    public void ToggleErase() 
+    public void ToggleErase()
     {
-        erasing = !erasing; 
+        erasing = !erasing;
 
-        if (erasing) 
+        if (erasing)
         {
             toggleEraseText.SetText("Stop");
-        } 
-        else 
+        }
+        else
         {
             toggleEraseText.SetText("Erase");
         }
-    }
-
-    void Update()
-    {
-        // if the user is holding down the left mouse button and the food placement toggle is on, place food
-
     }
 
     void FixedUpdate()
@@ -188,7 +183,7 @@ public class SlimeSimulation : MonoBehaviour
 
         if (playing)
         {
-            for (int i = 0; i < settings.simsPerFrame; i++) 
+            for (int i = 0; i < settings.simsPerFrame; i++)
             {
                 Simulate();
             }
@@ -245,9 +240,9 @@ public class SlimeSimulation : MonoBehaviour
             agents[i] = agentArray[i];
         }
 
-        for (int i = 0; i < agents.Count; i++) 
+        for (int i = 0; i < agents.Count; i++)
         {
-            if ((agents[i].position - clickPos).magnitude <= settings.eraseBrushRadius) 
+            if ((agents[i].position - clickPos).magnitude <= settings.eraseBrushRadius)
             {
                 agents.RemoveAt(i);
                 i--;
@@ -271,7 +266,7 @@ public class SlimeSimulation : MonoBehaviour
         computeSim.Dispatch(clearKernel, settings.vpWidth / 8, settings.vpHeight / 8, 1);
     }
 
-    void Paint() 
+    void Paint()
     {
         computeSim.SetTexture(paintKernel, "FoodMap", foodMap);
         computeSim.Dispatch(paintKernel, settings.vpWidth / 8, settings.vpHeight / 8, 1);
