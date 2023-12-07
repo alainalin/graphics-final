@@ -11,7 +11,8 @@ public class SimulationSettings : ScriptableObject
     public int simsPerFrame = 10;
     public float decayRate = 1;
     public float diffuseRate = 1;
-    public int foodBrushRadius = 5;
+    public float foodAttractionCoefficient = 5;
+    public int foodBrushRadius = 10;
     public Vector4 foodColor = new Vector4(0.882f, 0.682f, 0.376f, 1.0f);
     public int eraseBrushRadius = 5;
 

@@ -30,8 +30,9 @@ uint numAgents;
 
 RWStructuredBuffer<SpeciesSettings> species;
 
-RWStructuredBuffer<float4> foodSources;
+RWStructuredBuffer<float2> foodSources;
 uint numFoodSources;
+float cAttraction;
 
 float decayRate;
 float diffuseRate;
@@ -117,10 +118,32 @@ void step(int agentIdx) {
     slimeAgents[agentIdx].position = newPos;
 }
 
+// loop through each food source and compute the force of attraction towards the closest one
+float2 foodForce(float2 position) {
+    float2 closestFood;
+    minDist = FLT_MAX;
+
+    for (int i = 0; i < numFoodSources; i++) {
+        float2 posToFood = foodSources[i] - position;
+        float dist = length(posToFood);
+
+        if (dist < minDist) {
+            minDist = dist;
+            closestFood = foodSources[i];
+        }
+    }
+
+    float2 posToClosestFood = closestFood - position;
+    float dist = length(posToClosestFood);
+    float dir = normalize(posToClosestFood);    
+
+    return dir / (dist * dist);
+}
+
 [numthreads(16,1,1)]
 void UpdateSlimeSimulation (uint3 id : SV_DispatchThreadID)
 {
-    // TODO: update the state of slime agents based on the trail map
+    // TODO: update the state of slime agents based on the trail map and food attractor field
     if (id.x >= numAgents) 
     {
         return;
@@ -129,6 +152,7 @@ void UpdateSlimeSimulation (uint3 id : SV_DispatchThreadID)
     SlimeAgent agent = slimeAgents[id.x];
     SpeciesSettings agentSettings = species[agent.speciesID];
 
+    // adjust agent angle based on sensor readings of trail map
     // using same hashing method as Sebastian here
     int rand = hash(agent.position.y * width + agent.position.x + hash(id.x + time * 100000));
 
@@ -154,6 +178,11 @@ void UpdateSlimeSimulation (uint3 id : SV_DispatchThreadID)
     } else {
         slimeAgents[id.x].angle += 0;
     }
+
+    // adjust agent angle based on food attractor field
+    float2 forceOnAgent = foodForce(agent.position); 
+    float blendValue = cAttraction * length(forceOnAgent);
+    slimeAgents[id.x].angle = (blendValue * atan2(forceOnAgent.y, forceOnAgent.x)) + ((1.0 - blendValue) * slimeAgents[id.x].angle);
     
     step(id.x);
 }

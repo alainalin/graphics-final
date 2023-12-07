@@ -95,6 +95,7 @@ public class SlimeSimulation : MonoBehaviour
 
         computeSim.SetInt("foodBrushRadius", settings.foodBrushRadius);
         computeSim.SetVector("foodColor", settings.foodColor);
+        computeSim.SetFloat("cAttraction", settings.foodAttractionCoefficient);
 
         computeSim.SetInt("eraseBrushRadius", settings.eraseBrushRadius);
 
