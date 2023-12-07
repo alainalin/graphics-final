@@ -30,6 +30,9 @@ uint numAgents;
 
 RWStructuredBuffer<SpeciesSettings> species;
 
+RWStructuredBuffer<float4> foodSources;
+uint numFoodSources;
+
 float decayRate;
 float diffuseRate;
 

@@ -39,9 +39,12 @@ public class SlimeSimulation : MonoBehaviour
     public RenderTexture foodMap;
 
     public List<SlimeAgent> agents;
+    public List<Vector2> foodSources;
     public SlimeAgent[] agentArray;
+    public Vector2[] foodSourceArray;
     ComputeBuffer agentBuffer;
     ComputeBuffer speciesBuffer;
+    ComputeBuffer foodBuffer;
 
     // Start is called before the first frame update
     void Start()
@@ -131,6 +134,16 @@ public class SlimeSimulation : MonoBehaviour
         computeSim.SetInt("numAgents", agentArray.Length);
     }
 
+    public void SetFood()
+    {
+        foodSourceArray = foodSources.ToArray();
+
+        // passing food data + other uniforms
+        ComputeUtil.CreateBuffer(ref foodBuffer, foodSourceArray);
+        computeSim.SetBuffer(updateKernel, "foodSources", foodBuffer);
+        computeSim.SetInt("numFoodSources", foodSourceArray.Length);
+    }
+
     public void TogglePlaying()
     {
         playing = !playing;
@@ -209,16 +222,14 @@ public class SlimeSimulation : MonoBehaviour
         RectTransformUtility.ScreenPointToLocalPointInRectangle(viewport.rectTransform, screenPos, null, out Vector2 canvasPos);
         bool withinCanvas = viewport.rectTransform.rect.Contains(canvasPos);
 
-        // debug logging
-        Debug.Log("Click Detected!");
-        Debug.Log("Within Canvas: " + withinCanvas);
-        Debug.Log("Canvas Position: " + canvasPos);
-
         // if the click was within the canvas, pass the click position to the compute shader and paint food
         if (withinCanvas)
         {
-            Debug.Log("Painting Food!");
-            computeSim.SetVector("clickPos", canvasPos + new Vector2(settings.vpWidth / 2, settings.vpHeight / 2));
+            Vector2 shiftedCanvasPos = canvasPos + new Vector2(settings.vpWidth / 2, settings.vpHeight / 2);
+
+            foodSources.Add(shiftedCanvasPos);
+            SetFood();
+            computeSim.SetVector("clickPos", shiftedCanvasPos);
             computeSim.Dispatch(foodKernel, settings.vpWidth / 8, settings.vpHeight / 8, 1);
         }
 
