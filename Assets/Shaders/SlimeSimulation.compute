@@ -128,7 +128,7 @@ float2 foodForce(float2 position) {
     FoodSource closestFood = foodSources[0];
     float minDist = 1000000000; // large value beyond any possible on-screen distance
 
-    // loop through each food source and compute the force of attraction towards the closest one
+    // determine the closest food source that is active
     for (int i = 0; i < numFoodSources; i++) {
         FoodSource food = foodSources[i];
 
