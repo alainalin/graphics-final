@@ -127,7 +127,8 @@ public class SlimeSimulation : MonoBehaviour
             {
                 position = new Vector2(settings.vpWidth / 2 + randomOffsetX, settings.vpHeight / 2 + randomOffsetY),
                 angle = randAngle,
-                speciesID = 0
+                speciesID = 0,
+                hunger = 0,
             });
         }
 

@@ -26,7 +26,9 @@ public class SimulationSettings : ScriptableObject
         public int sensorRadius;
         public float velocity;
         public float trailWeight;
+        public float hungerDecayRate;
         public Vector4 color;
+
     };
 
     public SpeciesSettings[] species;

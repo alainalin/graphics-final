@@ -5,6 +5,7 @@ struct SlimeAgent {
     float2 position;
     float angle; // direction agent faces in radians
     int speciesID; // identifying index into species buffer 
+    float hunger; // 0-1, 1 is full, 0 is starving
 };
 
 struct SpeciesSettings {
@@ -16,6 +17,7 @@ struct SpeciesSettings {
     int sensorRadius;
     float velocity;
     float trailWeight;
+    float hungerDecayRate;
     float4 color;
 };
 
@@ -124,7 +126,8 @@ void step(int agentIdx) {
     slimeAgents[agentIdx].position = newPos;
 }
 
-float2 foodForce(float2 position) {
+float2 foodForce(int agentIdx) {
+    SlimeAgent agent = slimeAgents[agentIdx];
     FoodSource closestFood = foodSources[0];
     float minDist = 1000000000; // large value beyond any possible on-screen distance
 
@@ -132,7 +135,7 @@ float2 foodForce(float2 position) {
     for (int i = 0; i < numFoodSources; i++) {
         FoodSource food = foodSources[i];
 
-        float2 posToFood = food.position - position;
+        float2 posToFood = food.position - agent.position;
         float dist = length(posToFood);
 
         if (dist < minDist && food.attractorStrength > 0) {
@@ -143,9 +146,14 @@ float2 foodForce(float2 position) {
 
     // if there is an active food source, return the force of attraction towards it
     if (closestFood.attractorStrength > 0) {
-        float2 posToClosestFood = closestFood.position - position;
+        float2 posToClosestFood = closestFood.position - agent.position;
         float dist = length(posToClosestFood);
-        float2 dir = normalize(posToClosestFood);    
+        float2 dir = normalize(posToClosestFood);  
+
+        // if agent is close enough to food, eat it
+        if (dist < 1) {
+            slimeAgents[agentIdx].hunger = 1.0;
+        }
 
         return dir * (closestFood.attractorStrength / (dist * dist));
     } else {
@@ -193,15 +201,20 @@ void UpdateSlimeSimulation (uint3 id : SV_DispatchThreadID)
     }
 
     // adjust agent angle based on food attractor field
-    float2 forceOnAgent = foodForce(agent.position); 
+    float2 forceOnAgent = foodForce(id.x); 
 
     if (length(forceOnAgent) > 0) {
-        float blendValue = clamp(length(forceOnAgent), 0.0, 1.0);
+        float forceComponent = length(forceOnAgent);
+        float hungerComponent = pow(1.0 - agent.hunger, 8);
+        float blendValue = clamp(forceComponent * hungerComponent, 0.0, 1.0);
         slimeAgents[id.x].angle = (blendValue * atan2(forceOnAgent.y, forceOnAgent.x)) + ((1.0 - blendValue) * slimeAgents[id.x].angle);
     }
     
     // update agent position
     step(id.x);
+
+    // update agent hunger
+    slimeAgents[id.x].hunger = clamp(slimeAgents[id.x].hunger - agentSettings.hungerDecayRate * dt, 0.0, 1.0);
 }
 
 #pragma kernel Blur
