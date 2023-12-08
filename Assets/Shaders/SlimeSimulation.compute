@@ -121,7 +121,7 @@ void step(int agentIdx) {
 // loop through each food source and compute the force of attraction towards the closest one
 float2 foodForce(float2 position) {
     float2 closestFood;
-    minDist = FLT_MAX;
+    float minDist = 1000000000; // large value beyond any possible on-screen distance
 
     for (int i = 0; i < numFoodSources; i++) {
         float2 posToFood = foodSources[i] - position;

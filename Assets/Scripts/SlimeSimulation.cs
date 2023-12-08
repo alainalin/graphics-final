@@ -83,6 +83,9 @@ public class SlimeSimulation : MonoBehaviour
 
         CreateAgents();
 
+        foodSources.Add(new Vector2(0, 0));
+        SetFood();
+
         ComputeUtil.CreateBuffer(ref speciesBuffer, settings.species);
         computeSim.SetBuffer(updateKernel, "species", speciesBuffer);
         computeSim.SetBuffer(paintKernel, "species", speciesBuffer);
@@ -309,5 +312,6 @@ public class SlimeSimulation : MonoBehaviour
         // Release buffers
         agentBuffer.Release();
         speciesBuffer.Release();
+        foodBuffer.Release();
     }
 }
