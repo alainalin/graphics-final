@@ -39,9 +39,9 @@ public class SlimeSimulation : MonoBehaviour
     public RenderTexture foodMap;
 
     public List<SlimeAgent> agents;
-    public HashSet<Vector2> foodSources = new();
+    public HashSet<FoodSource> foodSources = new();
     public SlimeAgent[] agentArray;
-    public Vector2[] foodSourceArray;
+    public FoodSource[] foodSourceArray;
     ComputeBuffer agentBuffer;
     ComputeBuffer speciesBuffer;
     ComputeBuffer foodBuffer;
@@ -83,7 +83,13 @@ public class SlimeSimulation : MonoBehaviour
 
         CreateAgents();
 
-        foodSources.Add(new Vector2(0, 0));
+        // Add dummy food source so compute buffer is not empty (will trigger error otherwise)
+        foodSources.Add(new FoodSource
+        {
+            position = new Vector2(0, 0),
+            attractorStrength = 0,
+            amount = 0
+        });
         SetFood();
 
         ComputeUtil.CreateBuffer(ref speciesBuffer, settings.species);
@@ -140,7 +146,7 @@ public class SlimeSimulation : MonoBehaviour
 
     public void SetFood()
     {
-        foodSourceArray = new Vector2[foodSources.Count];
+        foodSourceArray = new FoodSource[foodSources.Count];
         foodSources.CopyTo(foodSourceArray);
 
         // passing food data + other uniforms
@@ -232,10 +238,20 @@ public class SlimeSimulation : MonoBehaviour
         {
             Vector2 shiftedCanvasPos = canvasPos + new Vector2(settings.vpWidth / 2, settings.vpHeight / 2);
 
-            if (!foodSources.Contains(shiftedCanvasPos))
+            FoodSource newFoodSource = new()
             {
-                foodSources.Add(shiftedCanvasPos);
+                position = shiftedCanvasPos,
+                attractorStrength = settings.foodAttractionCoefficient,
+                amount = 1 // dummy value (change later to use brush radius if food source depletion implemented)
+            };
+
+            if (!foodSources.Contains(newFoodSource))
+            {
+                // add food source to list of attractors
+                foodSources.Add(newFoodSource);
                 SetFood();
+
+                // draw food source on canvas
                 computeSim.SetVector("clickPos", shiftedCanvasPos);
                 computeSim.Dispatch(foodKernel, settings.vpWidth / 8, settings.vpHeight / 8, 1);
             }

@@ -19,6 +19,12 @@ struct SpeciesSettings {
     float4 color;
 };
 
+struct FoodSource {
+    float2 position;
+    float attractorStrength;
+    int amount;
+};
+
 RWTexture2D<float4> TrailMap;
 RWTexture2D<float4> NextTrailMap;
 
@@ -30,8 +36,8 @@ uint numAgents;
 
 RWStructuredBuffer<SpeciesSettings> species;
 
-RWStructuredBuffer<float2> foodSources;
-uint numFoodSources;
+RWStructuredBuffer<FoodSource> foodSources;
+int numFoodSources;
 float cAttraction;
 
 float decayRate;
@@ -118,26 +124,33 @@ void step(int agentIdx) {
     slimeAgents[agentIdx].position = newPos;
 }
 
-// loop through each food source and compute the force of attraction towards the closest one
 float2 foodForce(float2 position) {
-    float2 closestFood;
+    FoodSource closestFood = foodSources[0];
     float minDist = 1000000000; // large value beyond any possible on-screen distance
 
+    // loop through each food source and compute the force of attraction towards the closest one
     for (int i = 0; i < numFoodSources; i++) {
-        float2 posToFood = foodSources[i] - position;
+        FoodSource food = foodSources[i];
+
+        float2 posToFood = food.position - position;
         float dist = length(posToFood);
 
-        if (dist < minDist) {
+        if (dist < minDist && food.attractorStrength > 0) {
             minDist = dist;
             closestFood = foodSources[i];
         }
     }
 
-    float2 posToClosestFood = closestFood - position;
-    float dist = length(posToClosestFood);
-    float dir = normalize(posToClosestFood);    
+    // if there is an active food source, return the force of attraction towards it
+    if (closestFood.attractorStrength > 0) {
+        float2 posToClosestFood = closestFood.position - position;
+        float dist = length(posToClosestFood);
+        float2 dir = normalize(posToClosestFood);    
 
-    return dir / (dist * dist);
+        return dir * (closestFood.attractorStrength / (dist * dist));
+    } else {
+        return float2(0, 0);
+    }
 }
 
 [numthreads(16,1,1)]
@@ -181,9 +194,13 @@ void UpdateSlimeSimulation (uint3 id : SV_DispatchThreadID)
 
     // adjust agent angle based on food attractor field
     float2 forceOnAgent = foodForce(agent.position); 
-    float blendValue = cAttraction * length(forceOnAgent);
-    slimeAgents[id.x].angle = (blendValue * atan2(forceOnAgent.y, forceOnAgent.x)) + ((1.0 - blendValue) * slimeAgents[id.x].angle);
+
+    if (length(forceOnAgent) > 0) {
+        float blendValue = clamp(length(forceOnAgent), 0.0, 1.0);
+        slimeAgents[id.x].angle = (blendValue * atan2(forceOnAgent.y, forceOnAgent.x)) + ((1.0 - blendValue) * slimeAgents[id.x].angle);
+    }
     
+    // update agent position
     step(id.x);
 }
 
