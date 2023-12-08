@@ -18,6 +18,7 @@ MonoBehaviour:
   simsPerFrame: 25
   decayRate: 0.01
   diffuseRate: 1
+  foodAttractionCoefficient: 5
   foodBrushRadius: 10
   foodColor: {x: 0.882, y: 0.682, z: 0.376, w: 1}
   eraseBrushRadius: 5

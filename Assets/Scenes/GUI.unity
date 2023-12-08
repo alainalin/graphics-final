@@ -961,7 +961,6 @@ MonoBehaviour:
   trailMap: {fileID: 0}
   nextTrailMap: {fileID: 0}
   foodMap: {fileID: 0}
-  foodSourceArray: []
 --- !u!1 &1235937127
 GameObject:
   m_ObjectHideFlags: 0
