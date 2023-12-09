@@ -41,6 +41,7 @@ RWStructuredBuffer<SpeciesSettings> species;
 RWStructuredBuffer<FoodSource> foodSources;
 int numFoodSources;
 float cAttraction;
+bool foodDepletionEnabled;
 
 float decayRate;
 float diffuseRate;
@@ -128,7 +129,7 @@ void step(int agentIdx) {
 
 float2 foodForce(int agentIdx) {
     SlimeAgent agent = slimeAgents[agentIdx];
-    FoodSource closestFood = foodSources[0];
+    int closestFoodIndex = 0;
     float minDist = 1000000000; // large value beyond any possible on-screen distance
 
     // determine the closest food source that is active
@@ -140,9 +141,11 @@ float2 foodForce(int agentIdx) {
 
         if (dist < minDist && food.attractorStrength > 0) {
             minDist = dist;
-            closestFood = foodSources[i];
+            closestFoodIndex = i;
         }
     }
+
+    FoodSource closestFood = foodSources[closestFoodIndex];
 
     // if there is an active food source, return the force of attraction towards it
     if (closestFood.attractorStrength > 0) {
@@ -152,6 +155,15 @@ float2 foodForce(int agentIdx) {
 
         // if agent is close enough to food, eat it
         if (dist < 1) {
+            if (foodDepletionEnabled && closestFood.amount > 0) {
+                // atomic decrement
+                InterlockedAdd(foodSources[closestFoodIndex].amount, -1);
+            }
+
+            if (foodSources[closestFoodIndex].amount <= 0) {
+                foodSources[closestFoodIndex].attractorStrength = 0;
+            }
+
             slimeAgents[agentIdx].hunger = 1.0;
         }
 
@@ -201,7 +213,7 @@ void UpdateSlimeSimulation (uint3 id : SV_DispatchThreadID)
     }
 
     // adjust agent angle based on food attractor field
-    float2 forceOnAgent = foodForce(id.x); 
+    float2 forceOnAgent = foodForce(id.x);
 
     if (length(forceOnAgent) > 0) {
         float forceComponent = length(forceOnAgent);
@@ -250,24 +262,29 @@ void PaintSlimeSimulation (uint3 id : SV_DispatchThreadID)
     ViewportTex[id.xy] = (TrailMap[id.xy].x * species[0].color) + (FoodMap[id.xy] * foodColor);
 }
 
-#pragma kernel PaintFood
+#pragma kernel UpdateFood
 
-int2 clickPos;
-int foodBrushRadius;
+int foodSourceSize;
 
 [numthreads(8,8,1)]
-void PaintFood (uint3 id : SV_DispatchThreadID)
+void UpdateFood (uint3 id : SV_DispatchThreadID)
 {
-    float distance = length((int2)id.xy - clickPos);
+    for (int i = 0; i < numFoodSources; i++) {
+        FoodSource food = foodSources[i];
+        float2 pos = food.position;
+        float dist = length(pos - id.xy);
+        float radius = foodSourceSize * food.amount / 1000000.0;
 
-    if (distance <= foodBrushRadius) {
-        FoodMap[id.xy] = float4(1, 1, 1, 1);
+        if (dist <= radius) {
+            FoodMap[id.xy] = float4(1, 1, 1, 1);
+        }
     }
 }
 
 #pragma kernel Erase
 
 int eraseBrushRadius;
+float2 clickPos;
 
 [numthreads(8,8,1)]
 void Erase (uint3 id : SV_DispatchThreadID)
@@ -286,5 +303,13 @@ void Erase (uint3 id : SV_DispatchThreadID)
 void ClearTextures (uint3 id : SV_DispatchThreadID)
 {
     TrailMap[id.xy] = float4(0.0, 0.0, 0.0, 0.0);
+    FoodMap[id.xy] = float4(0.0, 0.0, 0.0, 0.0);
+}
+
+#pragma kernel ClearFood
+
+[numthreads(8,8,1)]
+void ClearFood (uint3 id : SV_DispatchThreadID)
+{
     FoodMap[id.xy] = float4(0.0, 0.0, 0.0, 0.0);
 }

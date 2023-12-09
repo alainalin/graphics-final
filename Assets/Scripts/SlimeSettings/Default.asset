@@ -15,11 +15,12 @@ MonoBehaviour:
   numAgents: 100000
   vpWidth: 512
   vpHeight: 512
-  simsPerFrame: 25
+  simsPerFrame: 120
   decayRate: 0.01
   diffuseRate: 1
-  foodAttractionCoefficient: 25
-  foodBrushRadius: 10
+  foodAttractionCoefficient: 36
+  foodDepletionEnabled: 1
+  foodSourceSize: 20
   foodColor: {x: 0.882, y: 0.682, z: 0.376, w: 1}
   eraseBrushRadius: 5
   species:
@@ -29,5 +30,5 @@ MonoBehaviour:
     sensorRadius: 1
     velocity: 1
     trailWeight: 2.5
-    hungerDecayRate: 0.005
+    hungerDecayRate: 0.0025
     color: {x: 1, y: 1, z: 1, w: 1}

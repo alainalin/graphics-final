@@ -32,6 +32,7 @@ public class SlimeSimulation : MonoBehaviour
     const int foodKernel = 3;
     const int eraseKernel = 4;
     const int clearKernel = 5;
+    const int clearFoodKernel = 6;
 
     public RenderTexture viewportTex;
     public RenderTexture trailMap;
@@ -81,6 +82,9 @@ public class SlimeSimulation : MonoBehaviour
         computeSim.SetTexture(clearKernel, "FoodMap", foodMap);
         computeSim.Dispatch(clearKernel, settings.vpWidth / 8, settings.vpHeight / 8, 1);
 
+        // clear food map in compute shader
+        computeSim.SetTexture(clearFoodKernel, "FoodMap", foodMap);
+
         CreateAgents();
 
         // Add dummy food source so compute buffer is not empty (will trigger error otherwise)
@@ -102,9 +106,10 @@ public class SlimeSimulation : MonoBehaviour
         computeSim.SetFloat("decayRate", settings.decayRate);
         computeSim.SetFloat("diffuseRate", settings.diffuseRate);
 
-        computeSim.SetInt("foodBrushRadius", settings.foodBrushRadius);
+        computeSim.SetInt("foodSourceSize", settings.foodSourceSize);
         computeSim.SetVector("foodColor", settings.foodColor);
         computeSim.SetFloat("cAttraction", settings.foodAttractionCoefficient);
+        computeSim.SetBool("foodDepletionEnabled", settings.foodDepletionEnabled);
 
         computeSim.SetInt("eraseBrushRadius", settings.eraseBrushRadius);
 
@@ -144,6 +149,11 @@ public class SlimeSimulation : MonoBehaviour
         computeSim.SetBuffer(updateKernel, "slimeAgents", agentBuffer);
         computeSim.SetInt("numAgents", agentArray.Length);
     }
+    public void GetFood()
+    {
+        foodBuffer.GetData(foodSourceArray);
+        foodSources = new HashSet<FoodSource>(foodSourceArray);
+    }
 
     public void SetFood()
     {
@@ -153,6 +163,7 @@ public class SlimeSimulation : MonoBehaviour
         // passing food data + other uniforms
         ComputeUtil.CreateBuffer(ref foodBuffer, foodSourceArray);
         computeSim.SetBuffer(updateKernel, "foodSources", foodBuffer);
+        computeSim.SetBuffer(foodKernel, "foodSources", foodBuffer);
         computeSim.SetInt("numFoodSources", foodSourceArray.Length);
     }
 
@@ -207,16 +218,21 @@ public class SlimeSimulation : MonoBehaviour
             PlaceFood();
         }
 
-        // run the specified number of simulations per frame
         if (playing)
         {
+            // run the specified number of simulations per frame
             for (int i = 0; i < settings.simsPerFrame; i++)
             {
                 Simulate();
             }
 
-            Paint();
         }
+
+        // update food map
+        UpdateFood();
+
+        // render the current state in the viewport
+        Paint();
 
         // erase if erasing is true and mouse is clicked
         if (erasing && Input.GetButton("Fire1"))
@@ -243,22 +259,17 @@ public class SlimeSimulation : MonoBehaviour
             {
                 position = shiftedCanvasPos,
                 attractorStrength = settings.foodAttractionCoefficient,
-                amount = 1 // dummy value (change later to use brush radius if food source depletion implemented)
+                amount = 1000000,
             };
 
             if (!foodSources.Contains(newFoodSource))
             {
                 // add food source to list of attractors
+                GetFood();
                 foodSources.Add(newFoodSource);
                 SetFood();
-
-                // draw food source on canvas
-                computeSim.SetVector("clickPos", shiftedCanvasPos);
-                computeSim.Dispatch(foodKernel, settings.vpWidth / 8, settings.vpHeight / 8, 1);
             }
         }
-
-        Paint();
     }
 
     void Erase()
@@ -307,8 +318,13 @@ public class SlimeSimulation : MonoBehaviour
 
     void Paint()
     {
-        computeSim.SetTexture(paintKernel, "FoodMap", foodMap);
         computeSim.Dispatch(paintKernel, settings.vpWidth / 8, settings.vpHeight / 8, 1);
+    }
+
+    void UpdateFood()
+    {
+        computeSim.Dispatch(clearFoodKernel, settings.vpWidth / 8, settings.vpHeight / 8, 1);
+        computeSim.Dispatch(foodKernel, settings.vpWidth / 8, settings.vpHeight / 8, 1);
     }
 
     void Simulate()
