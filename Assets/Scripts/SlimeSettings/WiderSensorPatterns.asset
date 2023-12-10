@@ -10,26 +10,22 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7aa054fc266ce456bba05390d06293fa, type: 3}
-  m_Name: Default
+  m_Name: WiderSensorPatterns
   m_EditorClassIdentifier: 
   numAgents: 100000
   vpWidth: 512
   vpHeight: 512
-  simsPerFrame: 120
+  simsPerFrame: 25
   decayRate: 0.01
   diffuseRate: 1
-  foodAttractionCoefficient: 36
-  foodDepletionEnabled: 1
-  foodSourceSize: 20
+  foodBrushRadius: 25
   foodColor: {x: 0.882, y: 0.682, z: 0.376, w: 1}
-  slimeBrushRadius: 25
-  slimeBrushDensity: 5
-  eraseBrushRadius: 100
+  eraseBrushRadius: 25
   species:
   - sensorAngle: 0.78
     rotationAngle: 0.78
     sensorDist: 9
     sensorRadius: 1
-    velocity: 1
-    trailWeight: 2.5
+    velocity: 3
+    trailWeight: 0.5
     color: {x: 1, y: 1, z: 1, w: 1}

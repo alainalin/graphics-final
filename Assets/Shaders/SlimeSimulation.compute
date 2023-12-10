@@ -2,7 +2,7 @@
 
 // redefine necessary structs
 struct SlimeAgent {
-    float2 position;
+    float2 position; // canvas space
     float angle; // direction agent faces in radians
     int speciesID; // identifying index into species buffer 
     float hunger; // 0-1, 1 is full, 0 is starving
@@ -50,7 +50,7 @@ float dt;
 float time;
 
 float4 speciesMask(int speciesID) {
-    return float4(speciesID == 0, speciesID == 1, speciesID == 2, speciesID == 4);
+    return float4(speciesID == 0, speciesID == 1, speciesID == 2, speciesID == 3);
 }
 
 float clamp(float num, float lower, float upper)
@@ -259,7 +259,11 @@ float4 foodColor;
 [numthreads(8,8,1)]
 void PaintSlimeSimulation (uint3 id : SV_DispatchThreadID)
 {
-    ViewportTex[id.xy] = (TrailMap[id.xy].x * species[0].color) + (FoodMap[id.xy] * foodColor);
+    ViewportTex[id.xy] = TrailMap[id.xy].x * species[0].color;
+    ViewportTex[id.xy] += TrailMap[id.xy].y * species[1].color;
+    ViewportTex[id.xy] += TrailMap[id.xy].z * species[2].color;
+    ViewportTex[id.xy] += TrailMap[id.xy].a * species[3].color;
+    ViewportTex[id.xy] += FoodMap[id.xy] * foodColor;
 }
 
 #pragma kernel UpdateFood
@@ -299,11 +303,12 @@ void Erase (uint3 id : SV_DispatchThreadID)
 
 #pragma kernel ClearTextures
 
+RWTexture2D<float4> ClearTexture;
+
 [numthreads(8,8,1)]
 void ClearTextures (uint3 id : SV_DispatchThreadID)
 {
-    TrailMap[id.xy] = float4(0.0, 0.0, 0.0, 0.0);
-    FoodMap[id.xy] = float4(0.0, 0.0, 0.0, 0.0);
+    ClearTexture[id.xy] = float4(0.0, 0.0, 0.0, 0.0);
 }
 
 #pragma kernel ClearFood
